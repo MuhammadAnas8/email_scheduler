@@ -34,6 +34,11 @@ yarn-error.log*
 .env*
 !.env.example
 
+# downloaded OAuth credentials and local tokens
+/client_secret*.json
+/credentials.json
+/token.json
+
 # local data and uploaded files
 /.local-uploads/
 /uploads/

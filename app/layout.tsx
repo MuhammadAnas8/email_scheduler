@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DashboardShell } from "@/components/dashboard-shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><DashboardShell>{children}</DashboardShell></body>
     </html>
   );
 }

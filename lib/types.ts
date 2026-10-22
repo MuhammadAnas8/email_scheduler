@@ -22,6 +22,7 @@ export const messageStatuses = [
 
 export type MessageStatus = (typeof messageStatuses)[number];
 
+// Persisted records will be scoped to a stable Supabase Auth user ID.
 export interface EmailRecord {
   recipient: string;
   subject: string;

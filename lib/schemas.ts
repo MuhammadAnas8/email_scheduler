@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { batchStatuses, messageStatuses } from "@/lib/types";
+
+export const batchStatusSchema = z.enum(batchStatuses);
+export const messageStatusSchema = z.enum(messageStatuses);
 
 export const emailRecordSchema = z.object({
   recipient: z.email(),
