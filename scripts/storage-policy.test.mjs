@@ -86,7 +86,12 @@ test("CV storage access is scoped to the authenticated owner and owned batch", a
     assert.ifError(batchError);
 
     const pdf = Buffer.from("%PDF-1.4\nphase2 storage policy fixture\n%%EOF\n");
-    const { error: uploadError } = await userA.storage.from("cv-attachments").upload(objectPath, pdf, {
+    const directOwnerUpload = await userA.storage.from("cv-attachments").upload(objectPath, pdf, {
+      contentType: "application/pdf", upsert: false,
+    });
+    assert.ok(directOwnerUpload.error, "authenticated clients cannot bypass server-side PDF validation");
+
+    const { error: uploadError } = await admin.storage.from("cv-attachments").upload(objectPath, pdf, {
       contentType: "application/pdf", upsert: false,
     });
     assert.ifError(uploadError);

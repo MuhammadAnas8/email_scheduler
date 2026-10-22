@@ -184,7 +184,7 @@ export type Database = {
           owner_id: string
           provider_message_id: string | null
           recipient: string
-          scheduled_at: string
+          scheduled_at: string | null
           sent_at: string | null
           status: string
           subject: string
@@ -203,7 +203,7 @@ export type Database = {
           owner_id: string
           provider_message_id?: string | null
           recipient: string
-          scheduled_at: string
+          scheduled_at?: string | null
           sent_at?: string | null
           status?: string
           subject: string
@@ -222,7 +222,7 @@ export type Database = {
           owner_id?: string
           provider_message_id?: string | null
           recipient?: string
-          scheduled_at?: string
+          scheduled_at?: string | null
           sent_at?: string | null
           status?: string
           subject?: string
@@ -243,7 +243,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_app_rate_limit: {
+        Args: { p_action: string }
+        Returns: boolean
+      }
+      create_draft_email_batch: {
+        Args: { p_messages: Json; p_name: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

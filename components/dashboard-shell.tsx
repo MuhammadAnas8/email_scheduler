@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "@/app/login/actions";
 
 const destinations = [
   { href: "/", label: "Overview", icon: "▦" },
@@ -12,6 +13,8 @@ const destinations = [
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  if (pathname === "/login") return <main className="auth-content">{children}</main>;
 
   return (
     <div className="app-shell">
@@ -37,12 +40,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <p className="sidebar-note">Phase 1 · App shell</p>
+        <form className="sidebar-signout" action={signOutAction}><button type="submit">Sign out</button></form>
+        <p className="sidebar-note">Phase 3 · Import review</p>
       </aside>
       <div className="main-column">
         <header className="topbar">
           <span className="breadcrumb">Workspace <span aria-hidden="true">/</span> {destinations.find((item) => item.href === pathname)?.label ?? "Workspace"}</span>
-          <span className="setup-pill"><i aria-hidden="true" /> Shell preview</span>
+          <span className="setup-pill"><i aria-hidden="true" /> Draft only</span>
         </header>
         <main className="content">{children}</main>
       </div>

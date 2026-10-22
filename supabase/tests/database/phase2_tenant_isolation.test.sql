@@ -162,8 +162,8 @@ select throws_ok(
 
 select is(
   (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname in ('CV attachments: owner read', 'CV attachments: owner upload', 'CV attachments: owner delete')),
-  3::bigint,
-  'private CV storage has owner read, upload, and delete policies'
+  2::bigint,
+  'private CV storage has owner read and delete policies; uploads use the validated server route'
 );
 select ok(
   has_table_privilege('authenticated', 'public.email_batches', 'SELECT')

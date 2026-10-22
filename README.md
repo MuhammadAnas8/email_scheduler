@@ -1,16 +1,16 @@
 # Correspond — Email Scheduler
 
-Correspond is a multi-user-ready foundation for preparing, scheduling, and tracking personalized outreach. Phase 1 provides an accessible dashboard shell and shared validation schemas only. Sign-in, data persistence, import, Gmail connection, and sending are not implemented.
+Correspond is a multi-user-ready app for preparing personalized outreach. Phase 3 provides cookie-backed Supabase sign-in, private CSV/JSON import and review, owner-scoped draft persistence, and private shared CV uploads. Scheduling, Gmail connection, and sending are not implemented.
 
 ## Stack
 
 - Next.js App Router, React, and TypeScript
 - Tailwind CSS
-- Supabase Auth and PostgreSQL, planned for durable user-owned data
-- Supabase private Storage, planned for shared PDF attachments
+- Supabase Auth and PostgreSQL for durable user-owned drafts
+- Supabase private Storage for shared PDF attachments
 - Google OAuth 2.0 and Gmail API, planned for per-user sending
 - A separate persistent Node.js/TypeScript worker, planned for scheduled delivery
-- Zod for runtime input validation and `csv-parse` for a later import phase
+- Zod for client and server validation and `csv-parse` for CSV import
 
 ## Local development
 
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The four dashboard destinations currently explain which capabilities are planned. There are no operational email, account, or queue controls.
+Open [http://localhost:3000](http://localhost:3000). Sign in with an administrator-provisioned Supabase Auth user; public registration is disabled in the local Supabase config. The New Batch flow imports CSV/JSON, validates and edits each row, optionally uploads one CV PDF, and saves a draft.
 
 ## Checks
 
@@ -31,7 +31,7 @@ npm run typecheck
 npm run build
 ```
 
-There is currently no test script. Do not use production credentials for local checks.
+Run `npm run test:phase3` for import, authorization-guard, request-size, and PDF validation tests. Database and Storage integration tests use the local Supabase stack. Do not use production credentials for local checks.
 
 ## Planned architecture and trust boundaries
 
@@ -43,13 +43,13 @@ Each application user will have one Gmail connection. OAuth state and callbacks 
 
 ## Current phase limits
 
-Phase 1 does not implement authentication or authorization, database access or migrations, RLS or Storage policies, CSV/JSON import, attachment upload, batch persistence, Gmail OAuth, email sending, queue controls, or worker behavior. The shell is not private and must not be treated as protected or deployed with private user data.
+The app implements authentication and authorization, owner-scoped database access, RLS and Storage policies, CSV/JSON import, private attachment upload, and draft persistence. Scheduling, Gmail OAuth, email sending, queue controls, and worker behavior are not implemented.
 
 ## Before public registration or production use
 
-- Configure Supabase Auth, session handling, and registration policy.
-- Add migrations, owner-scoped foreign keys, RLS policies, server-side authorization, and private Storage policies.
-- Add request-size and rate limits to sensitive endpoints; validate external input on the server.
+- Review Supabase Auth session settings and keep public registration disabled until launch controls are ready.
+- Apply the versioned migrations and verify owner-scoped foreign keys, RLS policies, server-side authorization, and private Storage policies against the intended Supabase project.
+- Add platform/IP-level rate limits before public launch. Import, draft, and attachment APIs already use atomic per-user, per-minute database limits; sign-in uses Supabase Auth limits.
 - Configure per-user Google OAuth consent and redirect handling; encrypt refresh tokens with a server-side key and keep credentials out of logs and browser code.
 - Deploy the web app and persistent worker separately. Configure secrets, worker health checks, leases and crash recovery, backups, and sanitized logs.
 - Verify pause, cancel, skip, retry, and uncertain-send handling before enabling bulk scheduling.
@@ -62,8 +62,8 @@ Phase 1 does not implement authentication or authorization, database access or m
 ## Project layout
 
 - `app/` — dashboard routes and global styles
-- `components/` — shared dashboard shell and honest section placeholders
-- `lib/schemas.ts` — Zod input and status schemas
+- `components/` — dashboard shell and import/preview workflow
+- `lib/` — shared schemas, CSV/JSON parsing, PDF validation, and server-only Supabase clients
 - `lib/types.ts` — shared batch/message statuses and import record shape
 - `worker/` — reserved for the persistent sender in a later phase
 - `docs/superpowers/` — design specs and implementation plans
@@ -113,3 +113,12 @@ This command destroys local database data. Check the active project and local da
 Copy `.env.example` to `.env.local` for server-side app configuration and replace placeholders only with the intended local values. `SUPABASE_SERVICE_ROLE_KEY` is privileged and must remain server-only; it is used only by the isolated admin client or local test fixture setup. The ordinary user client uses the anon key and request cookies, and scheduler reads rely on RLS. There is no browser Supabase client in this phase.
 
 Google OAuth, email sending, import/upload flows, and the persistent worker are not implemented in Phase 2. The connected-account table intentionally has no token columns. A later Gmail phase must store refresh-token ciphertext, nonce, authentication tag, and key version in a private schema/table with no user grants, encrypt/decrypt only in trusted server or worker code, and manage the encryption key outside PostgreSQL with a rotation and recovery plan.
+
+## Phase 3: import, preview, and draft storage
+
+- Sign in at `/login` with an administrator-provisioned Supabase Auth user. Public signup is disabled in `supabase/config.toml`.
+- The Phase 3 migration adds an authenticated draft creation RPC, allows draft messages to remain unscheduled, adds per-user API rate limits, and removes direct authenticated Storage writes so CV uploads pass through the server validator. Start the local stack and apply migrations with `npx supabase start` (or `npx supabase migration up --local` for an already-running local stack).
+- Run import/PDF unit tests with `npm run test:phase3`; run database and Storage isolation suites with `npm run db:test` and `npm run storage:test`.
+- CSV imports require `recipient`, `subject`, and `body` headers; JSON imports require an array of those records. Imports are limited to 2 MiB and 200 messages.
+- The app validates on the client for immediate feedback and validates again on the server. The server checks PDF bytes and a 10 MiB size limit without relying on the filename or browser MIME value.
+- The workflow saves drafts only. Scheduling, Gmail OAuth, sending, and background processing remain for later phases.
