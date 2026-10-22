@@ -1,6 +1,6 @@
 # Correspond — Email Scheduler
 
-Correspond is a multi-user-ready app for preparing personalized outreach. Phase 4 provides cookie-backed Supabase sign-in, private CSV/JSON import and review, owner-scoped draft persistence, private shared CV uploads, and durable queue scheduling and controls. Gmail connection, sending, and the persistent worker are not implemented.
+Correspond is a multi-user-ready app for preparing personalized outreach. Phase 5 provides cookie-backed Supabase sign-in, private CSV/JSON import and review, owner-scoped durable queue scheduling and controls, per-user Gmail OAuth, encrypted refresh-token storage, and one explicitly confirmed manual test email. Scheduled sending and the persistent worker are not implemented.
 
 ## Stack
 
@@ -8,7 +8,7 @@ Correspond is a multi-user-ready app for preparing personalized outreach. Phase 
 - Tailwind CSS
 - Supabase Auth and PostgreSQL for durable user-owned drafts
 - Supabase private Storage for shared PDF attachments
-- Google OAuth 2.0 and Gmail API, planned for per-user sending
+- Google OAuth 2.0 and Gmail API for per-user connection and manual test sends
 - A separate persistent Node.js/TypeScript worker, planned for scheduled delivery
 - Zod for client and server validation and `csv-parse` for CSV import
 
@@ -31,7 +31,7 @@ npm run typecheck
 npm run build
 ```
 
-Run `npm run test:phase3` for import, authorization-guard, request-size, and PDF validation tests. Run `npm run test:phase4` for schedule helper and queue integration tests. The queue integration test skips with a clear reason unless the explicit local-only `PHASE4_TEST_SUPABASE_URL`, `PHASE4_TEST_SUPABASE_ANON_KEY`, and `PHASE4_TEST_SUPABASE_SERVICE_ROLE_KEY` variables are set; it rejects non-loopback URLs and never loads `.env.local`. Database and Storage pgTAP/integration checks require the local Supabase stack. Do not use production credentials for local checks.
+Run `npm run test:phase3`, `npm run test:phase4`, and `npm run test:phase5` for import, queue, OAuth-state, token-crypto, MIME, and idempotency unit checks. Queue integration tests require the explicitly configured loopback test environment. Database and Storage pgTAP/integration checks require an available test database; do not use production credentials for tests.
 
 ## Planned architecture and trust boundaries
 
@@ -39,25 +39,27 @@ The Next.js web app will own the dashboard, import and preview flow, scheduling 
 
 The Supabase service-role key bypasses RLS. Keep it on trusted server or worker processes only and pair privileged operations with explicit ownership checks. Never expose it or OAuth credentials in browser code or `NEXT_PUBLIC_*` variables.
 
-Each application user will have one Gmail connection. OAuth state and callbacks must be validated, refresh tokens encrypted at rest, and token refresh/revocation handled server-side. The persistent worker will select the Gmail connection belonging to the owner of each queued message. It will use durable database state, atomically claim due work, and recover through leases; browser timers and long-running web requests will not send scheduled mail.
+Each application user has at most one active Gmail connection. OAuth state, PKCE, and callbacks are validated; refresh tokens are encrypted at rest; and token refresh/revocation stay server-side. Phase 5 supports only a manually confirmed single test email. The future persistent worker must select the Gmail connection belonging to each queued message, atomically claim durable queue work, and recover through leases; browser timers and long-running web requests will not send scheduled mail.
 
 ## Current phase limits
 
-The app implements authentication and authorization, owner-scoped database access, RLS and Storage policies, CSV/JSON import, private attachment upload, draft persistence, queue scheduling, pause/resume/cancel/skip controls, history, and derived queue counts. Scheduled queue state is durable, but no worker claims or sends messages. Gmail OAuth, email sending, retries, and worker behavior are not implemented. Apply `supabase/migrations/20261023000400_phase4_queue_controls.sql` through the repository's configured Supabase migration integration; no migration is applied by these app checks.
+The app implements authentication and authorization, owner-scoped database access, RLS and Storage policies, CSV/JSON import, private attachment upload, draft persistence, queue scheduling, pause/resume/cancel/skip controls, history, Gmail OAuth, encrypted token storage, and a manual test-send path. Scheduled queue state is durable, but no worker claims or sends queued messages. Automatic retries and worker behavior are not implemented. The Phase 5 migration is `supabase/migrations/20261023000500_phase5_google_oauth.sql`; the connected Supabase repository integration applies migrations.
 
 ## Before public registration or production use
 
 - Review Supabase Auth session settings and keep public registration disabled until launch controls are ready.
 - Apply the versioned migrations and verify owner-scoped foreign keys, RLS policies, server-side authorization, and private Storage policies against the intended Supabase project.
 - Add platform/IP-level rate limits before public launch. Import, draft, and attachment APIs already use atomic per-user, per-minute database limits; sign-in uses Supabase Auth limits.
-- Configure per-user Google OAuth consent and redirect handling; encrypt refresh tokens with a server-side key and keep credentials out of logs and browser code.
+- Complete [Phase 5 Google Cloud and environment setup](docs/phase-5-gmail-oauth-setup.md), including an OAuth test user, exact callback URL, and secure encryption-key backup.
 - Deploy the web app and persistent worker separately. Configure secrets, worker health checks, leases and crash recovery, backups, and sanitized logs.
 - Verify pause, cancel, and skip against the intended Supabase project. Retry and uncertain-send handling require the later worker phase.
-- Run an end-to-end check with a tiny batch sent to an address controlled by the owner before any real outreach.
+- Run a manual test email to an address controlled by the owner before beginning any future sending phase.
 
 ## Configuration hygiene
 
-`.env.example` contains variable names and safe placeholder values. Copy it to `.env.local` when a later integration phase needs configuration; `.env.local`, private keys, token files, and local upload directories are ignored by Git. Never commit real credentials or uploaded CVs.
+`.env.example` contains variable names and safe placeholder values. Copy it to `.env.local` when local integrations need configuration; `.env.local`, private keys, token files, and local upload directories are ignored by Git. Never commit real credentials or uploaded CVs.
+
+Phase 5 external setup steps are documented in [docs/phase-5-gmail-oauth-setup.md](docs/phase-5-gmail-oauth-setup.md).
 
 ## Project layout
 

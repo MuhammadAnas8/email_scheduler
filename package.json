@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:phase3": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/phase3-imports.test.mts",
     "test:phase4": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/phase4-scheduling.test.mts tests/phase4-queue.integration.test.mts",
+    "test:phase5": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/phase5-oauth.test.mts",
     "db:test": "supabase test db",
     "storage:test": "node --test scripts/storage-policy.test.mjs",
     "db:types": "supabase gen types --lang typescript --local > lib/database.types.ts"
@@ -17,9 +18,11 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
+    "@types/nodemailer": "^8.0.2",
     "csv-parse": "^7.0.3",
     "googleapis": "^187.0.0",
     "next": "16.4.2",
+    "nodemailer": "^10.2.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.7"

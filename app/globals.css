@@ -122,6 +122,15 @@ h2 { margin-bottom: 0; color: #2a362e; font-size: 17px; font-weight: 650; letter
 .batch-metadata dt { color: #5f6d63; font-size: 11px; }
 .batch-metadata dd { margin: 5px 0 0; color: #354138; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
 .history-honesty { margin: 18px 0 0; color: #5f6d63; font-size: 12px; line-height: 1.55; }
+.gmail-settings { display: grid; gap: 15px; margin-top: 24px; }
+.gmail-connection-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.gmail-connection-heading .welcome-copy { margin-top: 8px; }
+.gmail-status-muted { color: #5f6d63; }
+.gmail-account-email { margin: 13px 0 0; color: #354138; font-size: 13px; font-weight: 650; }
+.gmail-button { display: inline-flex; align-items: center; }
+.gmail-test-form { display: grid; gap: 13px; margin-top: 17px; }
+.gmail-attestation { display: flex; align-items: flex-start; gap: 9px; color: #465249; font-size: 12px; line-height: 1.5; }
+.gmail-attestation input { width: 16px; height: 16px; flex: none; margin: 0; accent-color: var(--green); }
 .history-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
 .secondary-button, .danger-button { min-height: 38px; border: 1px solid #d9e2da; border-radius: 7px; padding: 0 13px; background: #fff; color: #365541; font-size: 12px; font-weight: 650; cursor: pointer; }
 .danger-button { border-color: #e5d4d4; color: #8a3f3f; }
@@ -169,6 +178,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .step-status { font-size: 8px; }
   .placeholder-panel { margin-top: 17px; padding: 22px 17px; }
   .history-card, .empty-state { padding: 18px 15px; }
+  .gmail-connection-heading { align-items: flex-start; }
+  .gmail-connection-heading .status-pill { margin-top: 2px; }
   .batch-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
   .preview-footer { align-items: stretch; flex-direction: column; }
   .preview-footer .primary-button { width: 100%; }

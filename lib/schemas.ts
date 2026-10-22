@@ -36,5 +36,14 @@ export const scheduleBatchRequestSchema = z.object({
 export const batchActionSchema = z.object({ action: z.enum(batchActions) }).strict();
 export const resourceIdSchema = z.uuid();
 
+export const gmailTestRequestSchema = z.object({
+  requestId: z.uuid(),
+  recipient: z.string().trim().max(320).pipe(z.email("Enter a valid email address")),
+  subject: z.string().trim().min(1).max(998).refine((value) => !/[\r\n\0]/.test(value), "Subject contains invalid characters"),
+  text: z.string().max(10_000).refine((value) => value.trim().length > 0, "Message body is required"),
+  attestation: z.literal(true),
+  confirmed: z.literal(true),
+}).strict();
+
 export type EmailRecordInput = z.infer<typeof emailRecordSchema>;
 export type EmailBatchInput = z.infer<typeof emailBatchSchema>;

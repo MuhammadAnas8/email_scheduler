@@ -41,12 +41,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <form className="sidebar-signout" action={signOutAction}><button type="submit">Sign out</button></form>
-        <p className="sidebar-note">Phase 4 · Queue controls</p>
+        <p className="sidebar-note">Phase 5 · Gmail test</p>
       </aside>
       <div className="main-column">
         <header className="topbar">
           <span className="breadcrumb">Workspace <span aria-hidden="true">/</span> {destinations.find((item) => item.href === pathname)?.label ?? "Workspace"}</span>
-          <span className="setup-pill"><i aria-hidden="true" /> Queue only · no sending</span>
+          <span className="setup-pill"><i aria-hidden="true" /> Manual test only</span>
         </header>
         <main className="content">{children}</main>
       </div>

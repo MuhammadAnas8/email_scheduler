@@ -291,6 +291,51 @@ export type Database = {
           uncertain_count: number
         }[]
       }
+      upsert_google_connection: {
+        Args: {
+          p_owner_id: string
+          p_account_id: string
+          p_provider_subject: string
+          p_email: string
+          p_ciphertext: string | null
+          p_nonce: string | null
+          p_auth_tag: string | null
+          p_key_version: number | null
+        }
+        Returns: string
+      }
+      read_google_refresh_token: {
+        Args: { p_owner_id: string; p_account_id: string }
+        Returns: { ciphertext: string; nonce: string; auth_tag: string; key_version: number }[]
+      }
+      replace_google_refresh_token: {
+        Args: { p_owner_id: string; p_account_id: string; p_ciphertext: string; p_nonce: string; p_auth_tag: string; p_key_version: number }
+        Returns: boolean
+      }
+      register_google_oauth_state: {
+        Args: { p_owner_id: string; p_state_hash: string; p_expires_at: string }
+        Returns: boolean
+      }
+      consume_google_oauth_state: {
+        Args: { p_owner_id: string; p_state_hash: string }
+        Returns: boolean
+      }
+      delete_google_refresh_token: {
+        Args: { p_owner_id: string; p_account_id: string }
+        Returns: boolean
+      }
+      set_google_connection_status: {
+        Args: { p_owner_id: string; p_account_id: string; p_status: string }
+        Returns: boolean
+      }
+      claim_gmail_test_send: {
+        Args: { p_owner_id: string; p_request_id: string }
+        Returns: { status: string; provider_message_id: string | null; error_code: string | null; claimed: boolean }[]
+      }
+      finish_gmail_test_send: {
+        Args: { p_owner_id: string; p_request_id: string; p_status: string; p_provider_message_id: string | null; p_error_code: string | null }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
