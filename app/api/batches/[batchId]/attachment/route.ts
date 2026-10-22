@@ -15,9 +15,8 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { batchId } = await context.params;
   const { data: batch, error: batchError } = await supabase.from("email_batches")
-    .select("id, status").eq("id", batchId).maybeSingle();
+    .select("id, status, attachment_path").eq("id", batchId).maybeSingle();
   if (batchError || !batch) return NextResponse.json({ error: "Draft not found." }, { status: 404 });
-  if (batch.status !== "draft") return NextResponse.json({ error: "Attachments can only be added to drafts." }, { status: 409 });
 
   const declaredLength = Number(request.headers.get("content-length") ?? 0);
   if (declaredLength > MAX_CV_BYTES + 64 * 1024) return NextResponse.json({ error: "The PDF must be 10 MiB or smaller." }, { status: 413 });
@@ -44,13 +43,44 @@ export async function POST(request: Request, context: RouteContext) {
   // privileged client is used only after the session, batch ownership, and bytes
   // have been verified above.
   const admin = createAdminSupabaseClient();
-  const { error: uploadError } = await admin.storage.from("cv-attachments").upload(path, bytes, {
-    contentType: "application/pdf", upsert: true, cacheControl: "3600",
-  });
-  if (uploadError) return NextResponse.json({ error: "PDF could not be stored for this draft." }, { status: 400 });
+  if (batch.attachment_path) {
+    if (batch.attachment_path !== path) return NextResponse.json({ error: "A CV is already attached to this draft." }, { status: 409 });
+    const { data: existingFile, error: existingFileError } = await admin.storage.from("cv-attachments").download(path);
+    if (existingFileError || !existingFile) return NextResponse.json({ error: "The existing CV could not be verified." }, { status: 409 });
+    const existingBytes = new Uint8Array(await existingFile.arrayBuffer());
+    if (existingBytes.length !== bytes.length || existingBytes.some((byte, index) => byte !== bytes[index])) {
+      return NextResponse.json({ error: "A different CV is already attached to this draft." }, { status: 409 });
+    }
+    return NextResponse.json({ uploaded: true });
+  }
+  if (batch.status !== "draft") return NextResponse.json({ error: "Attachments can only be added to drafts." }, { status: 409 });
 
-  const { error: updateError } = await supabase.from("email_batches").update({ attachment_path: path })
-    .eq("id", batchId).eq("status", "draft");
-  if (updateError) return NextResponse.json({ error: "PDF was uploaded, but draft metadata could not be updated. Retry the upload." }, { status: 500 });
+  let createdObject = true;
+  const { error: uploadError } = await admin.storage.from("cv-attachments").upload(path, bytes, {
+    contentType: "application/pdf", upsert: false, cacheControl: "3600",
+  });
+  if (uploadError) {
+    const { data: existingFile, error: existingFileError } = await admin.storage.from("cv-attachments").download(path);
+    if (existingFileError || !existingFile) return NextResponse.json({ error: "PDF could not be stored for this draft." }, { status: 400 });
+    const existingBytes = new Uint8Array(await existingFile.arrayBuffer());
+    if (existingBytes.length !== bytes.length || existingBytes.some((byte, index) => byte !== bytes[index])) {
+      return NextResponse.json({ error: "A different PDF already exists for this draft." }, { status: 409 });
+    }
+    createdObject = false;
+  }
+
+  const { error: updateError } = await supabase.rpc("set_draft_attachment_path", {
+    p_batch_id: batchId,
+    p_attachment_path: path,
+  });
+  if (updateError) {
+    const { data: latestBatch, error: verifyError } = await supabase.from("email_batches")
+      .select("status, attachment_path").eq("id", batchId).maybeSingle();
+    if (!verifyError && latestBatch?.attachment_path === path) return NextResponse.json({ uploaded: true });
+    const definitiveRejection = ["42501", "22023", "23514", "55000", "P0002"].includes(updateError.code ?? "");
+    if (createdObject && !verifyError && definitiveRejection) await admin.storage.from("cv-attachments").remove([path]);
+    const status = updateError.code === "P0002" ? 404 : updateError.code === "55000" ? 409 : 500;
+    return NextResponse.json({ error: "PDF was uploaded, but draft metadata could not be confirmed. Refresh the draft before retrying." }, { status });
+  }
   return NextResponse.json({ uploaded: true });
 }

@@ -18,6 +18,7 @@ export const messageStatuses = [
   "failed",
   "skipped",
   "uncertain",
+  "cancelled",
 ] as const;
 
 export type MessageStatus = (typeof messageStatuses)[number];
@@ -27,4 +28,28 @@ export interface EmailRecord {
   recipient: string;
   subject: string;
   body: string;
+}
+
+export const batchActions = ["pause", "resume", "cancel"] as const;
+export type BatchAction = (typeof batchActions)[number];
+
+export interface ScheduleBatchRequest {
+  startsAt: string | null;
+  intervalSeconds: number;
+}
+
+export interface EmailBatchCounts {
+  batch_id: string;
+  total_count: number;
+  pending_count: number;
+  skipped_count: number;
+  cancelled_count: number;
+  sent_count: number;
+  failed_count: number;
+  uncertain_count: number;
+}
+
+export interface BatchActionResult {
+  id: string;
+  status: "scheduled" | "paused" | "cancelled";
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { batchStatuses, messageStatuses } from "./types.ts";
+import { batchActions, batchStatuses, messageStatuses } from "./types.ts";
 
 export const batchStatusSchema = z.enum(batchStatuses);
 export const messageStatusSchema = z.enum(messageStatuses);
@@ -27,6 +27,14 @@ export const emailBatchSchema = z.object({
   startsAt: z.iso.datetime({ offset: true }).nullable(),
   messages: z.array(emailRecordSchema).min(1).max(200),
 });
+
+export const scheduleBatchRequestSchema = z.object({
+  startsAt: z.iso.datetime({ offset: true }).nullable(),
+  intervalSeconds: z.number().int().min(5).max(10),
+}).strict();
+
+export const batchActionSchema = z.object({ action: z.enum(batchActions) }).strict();
+export const resourceIdSchema = z.uuid();
 
 export type EmailRecordInput = z.infer<typeof emailRecordSchema>;
 export type EmailBatchInput = z.infer<typeof emailBatchSchema>;

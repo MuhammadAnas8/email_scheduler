@@ -22,9 +22,9 @@ insert into public.email_batches (id, owner_id, connected_account_id, name, stat
   ('aaaaaaaa-0000-4000-8000-000000000001', '11111111-1111-4111-8111-111111111111', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'User A batch', 'draft'),
   ('bbbbbbbb-0000-4000-8000-000000000002', '22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'User B batch', 'cancelled');
 
-insert into public.scheduled_emails (id, owner_id, batch_id, recipient, subject, body, scheduled_at, status) values
-  ('aaaaaaaa-eeee-4eee-8eee-eeeeeeeeeee1', '11111111-1111-4111-8111-111111111111', 'aaaaaaaa-0000-4000-8000-000000000001', 'a-recipient@example.test', 'A subject', 'A body', now(), 'pending'),
-  ('bbbbbbbb-eeee-4eee-8eee-eeeeeeeeeee2', '22222222-2222-4222-8222-222222222222', 'bbbbbbbb-0000-4000-8000-000000000002', 'b-recipient@example.test', 'B subject', 'B body', now(), 'sent');
+insert into public.scheduled_emails (id, owner_id, batch_id, position, recipient, subject, body, scheduled_at, status) values
+  ('aaaaaaaa-eeee-4eee-8eee-eeeeeeeeeee1', '11111111-1111-4111-8111-111111111111', 'aaaaaaaa-0000-4000-8000-000000000001', 1, 'a-recipient@example.test', 'A subject', 'A body', now(), 'pending'),
+  ('bbbbbbbb-eeee-4eee-8eee-eeeeeeeeeee2', '22222222-2222-4222-8222-222222222222', 'bbbbbbbb-0000-4000-8000-000000000002', 1, 'b-recipient@example.test', 'B subject', 'B body', now(), 'sent');
 
 insert into public.email_attempts (owner_id, scheduled_email_id, attempt_number, started_at, ended_at, outcome) values
   ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-eeee-4eee-8eee-eeeeeeeeeee1', 1, now() - interval '2 seconds', now() - interval '1 second', 'retrying'),
@@ -46,9 +46,9 @@ select lives_ok(
   $$insert into public.email_batches (id, owner_id, name) values ('cccccccc-0000-4000-8000-000000000003', auth.uid(), 'User A draft')$$,
   'user A may insert an owned draft batch'
 );
-select lives_ok(
+select throws_ok(
   $$update public.email_batches set name = 'User A draft edited' where id = 'cccccccc-0000-4000-8000-000000000003'$$,
-  'user A may update an owned draft batch'
+  '42501', null, 'authenticated clients must use lifecycle RPCs for batch updates'
 );
 select throws_ok(
   $$insert into public.email_batches (owner_id, name) values ('22222222-2222-4222-8222-222222222222', 'Spoofed batch')$$,
@@ -98,7 +98,7 @@ select throws_ok(
 );
 set constraints email_batches_connected_account_owner_fkey deferred;
 select throws_ok(
-  $$insert into public.scheduled_emails (owner_id, batch_id, recipient, subject, body, scheduled_at) values ('11111111-1111-4111-8111-111111111111', 'bbbbbbbb-0000-4000-8000-000000000002', 'x@example.test', 'subject', 'body', now())$$,
+  $$insert into public.scheduled_emails (owner_id, batch_id, position, recipient, subject, body, scheduled_at) values ('11111111-1111-4111-8111-111111111111', 'bbbbbbbb-0000-4000-8000-000000000002', 1, 'x@example.test', 'subject', 'body', now())$$,
   '23503', null, 'message cannot reference another owner batch'
 );
 select throws_ok(
@@ -127,7 +127,7 @@ select throws_ok(
   '23514', null, 'batch status must be from the shared status set'
 );
 select throws_ok(
-  $$insert into public.scheduled_emails (owner_id, batch_id, recipient, subject, body, scheduled_at, status) values ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-0000-4000-8000-000000000001', 'x@example.test', 'subject', 'body', now(), 'draft')$$,
+  $$insert into public.scheduled_emails (owner_id, batch_id, position, recipient, subject, body, scheduled_at, status) values ('11111111-1111-4111-8111-111111111111', 'aaaaaaaa-0000-4000-8000-000000000001', 2, 'x@example.test', 'subject', 'body', now(), 'draft')$$,
   '23514', null, 'message status must be from the shared status set'
 );
 
@@ -168,7 +168,7 @@ select is(
 select ok(
   has_table_privilege('authenticated', 'public.email_batches', 'SELECT')
   and has_table_privilege('authenticated', 'public.email_batches', 'INSERT')
-  and has_table_privilege('authenticated', 'public.email_batches', 'UPDATE')
+  and not has_table_privilege('authenticated', 'public.email_batches', 'UPDATE')
   and has_table_privilege('authenticated', 'public.email_batches', 'DELETE'),
   'authenticated role has only the intended batch table operations'
 );

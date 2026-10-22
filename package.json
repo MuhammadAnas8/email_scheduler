@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:phase3": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/phase3-imports.test.mts",
+    "test:phase4": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/phase4-scheduling.test.mts tests/phase4-queue.integration.test.mts",
     "db:test": "supabase test db",
     "storage:test": "node --test scripts/storage-policy.test.mjs",
     "db:types": "supabase gen types --lang typescript --local > lib/database.types.ts"

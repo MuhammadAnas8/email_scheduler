@@ -182,6 +182,7 @@ export type Database = {
           lease_token: string | null
           next_attempt_at: string
           owner_id: string
+          position: number
           provider_message_id: string | null
           recipient: string
           scheduled_at: string | null
@@ -201,6 +202,7 @@ export type Database = {
           lease_token?: string | null
           next_attempt_at?: string
           owner_id: string
+          position: number
           provider_message_id?: string | null
           recipient: string
           scheduled_at?: string | null
@@ -220,6 +222,7 @@ export type Database = {
           lease_token?: string | null
           next_attempt_at?: string
           owner_id?: string
+          position?: number
           provider_message_id?: string | null
           recipient?: string
           scheduled_at?: string | null
@@ -250,6 +253,43 @@ export type Database = {
       create_draft_email_batch: {
         Args: { p_messages: Json; p_name: string }
         Returns: string
+      }
+      set_draft_attachment_path: {
+        Args: { p_attachment_path: string; p_batch_id: string }
+        Returns: boolean
+      }
+      schedule_email_batch: {
+        Args: { p_batch_id: string; p_interval_seconds: number; p_starts_at: string | null }
+        Returns: string
+      }
+      pause_email_batch: {
+        Args: { p_batch_id: string }
+        Returns: string
+      }
+      resume_email_batch: {
+        Args: { p_batch_id: string }
+        Returns: string
+      }
+      cancel_email_batch: {
+        Args: { p_batch_id: string }
+        Returns: string
+      }
+      skip_scheduled_email: {
+        Args: { p_batch_id: string; p_message_id: string }
+        Returns: string
+      }
+      get_email_batch_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          batch_id: string
+          total_count: number
+          pending_count: number
+          skipped_count: number
+          cancelled_count: number
+          sent_count: number
+          failed_count: number
+          uncertain_count: number
+        }[]
       }
     }
     Enums: {
