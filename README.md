@@ -67,3 +67,49 @@ Phase 1 does not implement authentication or authorization, database access or m
 - `lib/types.ts` — shared batch/message statuses and import record shape
 - `worker/` — reserved for the persistent sender in a later phase
 - `docs/superpowers/` — design specs and implementation plans
+
+# Phase 2: Supabase database foundation
+
+The database foundation uses Supabase Auth UUIDs as row owners and applies ownership checks in PostgreSQL. The local stack uses a dedicated project slug and ports (`55420`–`55429`) so it can coexist with another local Supabase project. No hosted project is linked by this repository.
+
+## Local prerequisites and setup
+
+- Node.js and npm (use `npm ci` for the lockfile-defined dependencies).
+- Supabase CLI and Docker Desktop with its Linux container engine running.
+
+Start the local services and apply the ordered migrations:
+
+```powershell
+npx supabase start
+```
+
+The migrations create `connected_accounts`, `email_batches`, `scheduled_emails`, and `email_attempts`; enforce composite owner relationships and status transitions; enable owner-scoped RLS; and create the private `cv-attachments` bucket. The bucket accepts `application/pdf` up to 10 MiB and permits access only to `{owner_id}/{batch_id}/cv.pdf` when that batch belongs to the signed-in owner. Database deletion does not remove a Storage object; a later deletion workflow must handle both resources.
+
+Run database and Storage isolation checks against this local stack:
+
+```powershell
+npm run db:test
+npm run storage:test
+```
+
+The Storage test reads local connection values from `supabase status`; it refuses non-loopback endpoints and requires this repository's local port `55421`. Do not provide hosted or production credentials to tests.
+
+Regenerate the TypeScript database schema after changing a migration:
+
+```powershell
+npm run db:types
+```
+
+For an explicitly disposable local database only, replay all migrations with:
+
+```powershell
+npx supabase db reset
+```
+
+This command destroys local database data. Check the active project and local data first. Never run a linked or hosted reset. For hosted development, staging, or production, review migration SQL and apply it through the intended project's approved migration process; this Phase 2 setup does not link a remote project or push migrations.
+
+## Server environment
+
+Copy `.env.example` to `.env.local` for server-side app configuration and replace placeholders only with the intended local values. `SUPABASE_SERVICE_ROLE_KEY` is privileged and must remain server-only; it is used only by the isolated admin client or local test fixture setup. The ordinary user client uses the anon key and request cookies, and scheduler reads rely on RLS. There is no browser Supabase client in this phase.
+
+Google OAuth, email sending, import/upload flows, and the persistent worker are not implemented in Phase 2. The connected-account table intentionally has no token columns. A later Gmail phase must store refresh-token ciphertext, nonce, authentication tag, and key version in a private schema/table with no user grants, encrypt/decrypt only in trusted server or worker code, and manage the encryption key outside PostgreSQL with a rotation and recovery plan.
